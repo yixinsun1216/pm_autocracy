@@ -1,0 +1,36 @@
+
+\begingroup
+\centering
+\begin{tabular}{lcccccc}
+   \tabularnewline \midrule \midrule
+                                               & Main Spec      & 10km            & 50km           & Country FE     & Year            & Country + Year FE \\   
+   Model:                                      & (1)            & (2)             & (3)            & (4)            & (5)             & (6)\\  
+   \midrule
+   \emph{Variables}\\
+   Satellite PM2.5                             & 0.9532$^{***}$ & 0.9593$^{***}$  & 0.9312$^{***}$ & 0.9405$^{***}$ & 0.9955$^{***}$  & 0.8704$^{***}$\\   
+                                               & (0.0433)       & (0.0393)        & (0.0461)       & (0.0511)       & (0.0373)        & (0.0614)\\   
+   I(Partially Free)                           & 2.596          & 2.273           & 2.078          & -3.170$^{*}$   & 1.960           & -3.321$^{**}$\\   
+                                               & (1.932)        & (1.868)         & (1.911)        & (1.734)        & (1.495)         & (1.649)\\   
+   I(Not Free)                                 & 5.180          & 5.310           & 4.847          & -9.078$^{**}$  & 5.071           & -7.262$^{**}$\\   
+                                               & (3.292)        & (3.283)         & (3.368)        & (3.609)        & (3.321)         & (3.641)\\   
+   Satellite PM2.5 $\times$ I(Partially Free)  & 0.0010         & 0.0057          & 0.0390         & 0.0539         & -0.0359         & 0.1197$^{*}$\\   
+                                               & (0.0688)       & (0.0650)        & (0.0678)       & (0.0555)       & (0.0508)        & (0.0680)\\   
+   Satellite PM2.5 $\times$ I(Not Free)        & -0.1753$^{**}$ & -0.1902$^{***}$ & -0.1378$^{*}$  & -0.0724        & -0.2233$^{***}$ & -0.0101\\   
+                                               & (0.0750)       & (0.0716)        & (0.0807)       & (0.1336)       & (0.0754)        & (0.1423)\\   
+   \midrule
+   \emph{Fixed-effects}\\
+   UN Sub-Region                               & Yes            & Yes             & Yes            &                &                 & \\  
+   Year                                        & Yes            & Yes             & Yes            &                & Yes             & Yes\\  
+   Country                                     &                &                 &                & Yes            &                 & Yes\\  
+   \midrule
+   \emph{Fit statistics}\\
+   Observations                                & 29,943         & 29,938          & 29,961         & 29,943         & 29,943          & 29,943\\  
+   R$^2$                                       & 0.74981        & 0.75339         & 0.74393        & 0.77536        & 0.74762         & 0.77852\\  
+   Within R$^2$                                & 0.50032        & 0.50750         & 0.48903        & 0.43309        & 0.74197         & 0.41142\\  
+   \midrule \midrule
+   \multicolumn{7}{l}{\emph{Clustered (Country) standard-errors in parentheses}}\\
+   \multicolumn{7}{l}{\emph{Signif. Codes: ***: 0.01, **: 0.05, *: 0.1}}\\
+\end{tabular}
+\par\endgroup
+
+

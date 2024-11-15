@@ -1,0 +1,40 @@
+
+\begingroup
+\centering
+\begin{tabular}{lcccc}
+   \tabularnewline \midrule \midrule
+   Dependent Variable: & \multicolumn{4}{c}{WHO Reported PM2.5}\\
+    & \multicolumn{2}{c}{Full Sample} & \multicolumn{2}{c}{No China} \\ \cmidrule(lr){2-3} \cmidrule(lr){4-5}
+   Model:                                      & (1)            & (2)             & (3)            & (4)\\  
+   \midrule
+   \emph{Variables}\\
+   Satellite PM2.5                             & 0.9563$^{***}$ & 1.024$^{***}$   & 0.9532$^{***}$ & 1.039$^{***}$\\   
+                                               & (0.0425)       & (0.0371)        & (0.0433)       & (0.0365)\\   
+   I(Partially Free)                           & 2.849          &                 & 2.596          &   \\   
+                                               & (1.890)        &                 & (1.932)        &   \\   
+   I(Not Free)                                 & 1.510          &                 & 5.180          &   \\   
+                                               & (1.714)        &                 & (3.292)        &   \\   
+   Satellite PM2.5 $\times$ I(Partially Free)  & 0.0045         &                 & 0.0010         &   \\   
+                                               & (0.0665)       &                 & (0.0688)       &   \\   
+   Satellite PM2.5 $\times$ I(Not Free)        & -0.0490        &                 & -0.1753$^{**}$ &   \\   
+                                               & (0.0432)       &                 & (0.0750)       &   \\   
+   FiW                                         &                & 0.6687$^{**}$   &                & 1.133$^{**}$\\   
+                                               &                & (0.3275)        &                & (0.4957)\\   
+   Satellite PM2.5 $\times$ FiW                &                & -0.0248$^{***}$ &                & -0.0440$^{***}$\\   
+                                               &                & (0.0086)        &                & (0.0131)\\   
+   \midrule
+   \emph{Fixed-effects}\\
+   UN Sub-Region                               & Yes            & Yes             & Yes            & Yes\\  
+   Year                                        & Yes            & Yes             & Yes            & Yes\\  
+   \midrule
+   \emph{Fit statistics}\\
+   Observations                                & 34,493         & 34,493          & 29,943         & 29,943\\  
+   R$^2$                                       & 0.83748        & 0.83690         & 0.74981        & 0.74862\\  
+   Within R$^2$                                & 0.60097        & 0.59953         & 0.50032        & 0.49793\\  
+   \midrule \midrule
+   \multicolumn{5}{l}{\emph{Clustered (Country) standard-errors in parentheses}}\\
+   \multicolumn{5}{l}{\emph{Signif. Codes: ***: 0.01, **: 0.05, *: 0.1}}\\
+\end{tabular}
+\par\endgroup
+
+
