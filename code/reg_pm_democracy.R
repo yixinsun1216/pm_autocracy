@@ -84,12 +84,6 @@ etable(reg_nochina, dict = c(outdict, "chinaTRUE" = "China"),
        tex = TRUE, replace = TRUE,
        file = file.path(gdir, "outputs/reg_main.tex"))
 
-# with China
-reg_all <- map(f_reg, ~feols(as.formula(.x), data = reg_data, cluster = ~countrycode)) 
-etable(reg_all, dict = c(outdict, "chinaTRUE" = "China"), 
-       tex = TRUE, replace = TRUE,
-       file = file.path(gdir, "outputs/reg_main_withchina.tex"))
-
 
 #==============================================================================
 # Robustness
@@ -102,19 +96,12 @@ f_reg_robust <-
     paste0("pm2_5 ~ pm2.5_20km*dem |year"),
     paste0("pm2_5 ~ pm2.5_20km*dem |countrycode + year")) 
 
-reg_dist <- map(f_reg_robust, ~feols(as.formula(.x), data = reg_data, cluster = ~countrycode)) 
 reg_dist_nochina <- map(f_reg_robust, ~feols(as.formula(.x), data = filter(reg_data, countrycode != "CHN"), cluster = ~countrycode)) 
-
-
-etable(reg_dist, dict = outdict, 
-       headers = c("Main Spec", "10km", "50km", "Country FE", "Year", "Country + Year FE"), 
-       depvar = FALSE, tex = TRUE, replace = TRUE, 
-       file = file.path(gdir, "outputs/reg_robust.tex"))
 
 etable(reg_dist_nochina, dict = outdict, 
        headers = c("Main Spec", "10km", "50km", "Country FE", "Year", "Country + Year FE"), 
        depvar = FALSE, tex = TRUE, replace = TRUE, 
-       file = file.path(gdir, "outputs/reg_robust_nochina.tex"))
+       file = file.path(gdir, "outputs/reg_robust.tex"))
 
 
 f_reg_fiw_robust <-
@@ -126,20 +113,13 @@ f_reg_fiw_robust <-
     paste0("pm2_5 ~ pm2.5_20km*fiw_pr |year"),
     paste0("pm2_5 ~ pm2.5_20km*fiw_pr |countrycode + year")) 
 
-reg_fiw_dist <- map(f_reg_fiw_robust, ~feols(as.formula(.x), data = reg_data, cluster = ~countrycode)) 
-
-etable(reg_fiw_dist, dict = outdict, 
-       headers = c("Main Spec", "10km", "50km", "FiW Quad", "Country FE", "Year", "Country + Year FE"), 
-       depvar = FALSE, tex = TRUE, replace = TRUE, 
-       file = file.path(gdir, "outputs/reg_fiw_robust.tex"))
-
 reg_fiw_dist_nochina <- map(f_reg_fiw_robust, ~feols(as.formula(.x), data = filter(reg_data, countrycode != "CHN"), cluster = ~countrycode)) 
 etable(reg_fiw_dist_nochina, dict = outdict, 
        headers = c("Main Spec", "10km", "50km", "FiW Quad", "Country FE", "Year", "Country + Year FE"), 
        depvar = FALSE, tex = TRUE, replace = TRUE, 
-       file = file.path(gdir, "outputs/reg_fiw_robust_nochina.tex"))
+       file = file.path(gdir, "outputs/reg_fiw_robust.tex"))
 
-
+stop()
 
 #==============================================================================
 # robustenss - exclude one country at a time
@@ -158,31 +138,14 @@ coefs_exclude_country <-
   arrange(estimate) %>%
   mutate(Regression = row_number())
 
-# same as above, but this time we include china
-coefs_include_china <- map_df(unique(reg_data$countrycode), function(x){
-  data <- filter(reg_data, countrycode != x)
-  feols(pm2_5 ~ pm2.5_20km*fiw_pr |subregion + year, data) %>%
-    broom::tidy(conf.int = TRUE) %>%
-    filter(term == "pm2.5_20km:fiw_pr") %>%
-    mutate(country := !!x)
-  }) %>%
-  arrange(estimate) %>%
-  mutate(Regression = row_number())
-
-# combine the two types of robustness checks into one figure
+# plot coefficients in one figure
 coefs_exclude_country %>%
-  mutate(exclude = "Exclude China") %>%
-  bind_rows(coefs_include_china) %>%
-  mutate(exclude = replace_na(exclude, "Include China"), 
-         china = if_else(country == "CHN", "China", "")) %>%
   ggplot(aes(x = Regression, y = estimate)) +
   geom_point() + 
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high), color = "grey50",
                 position = position_dodge2(width = 0.5, padding = 0.5)) + 
   theme_linedraw() +
-  facet_wrap(~exclude) + 
-  theme(text = element_text(size = 20)) + 
-  geom_text(aes(label = china), hjust = -.2, color = "maroon")
+  theme(text = element_text(size = 20)) 
 ggsave(file.path(gdir, "outputs/robust_exclude_country.png"), width = 13, height = 8)
 
 
@@ -206,24 +169,8 @@ coefs_exclude_subregion <-
   arrange(estimate) %>%
   mutate(Regression = row_number())
 
-coefs_subregion_include_china <- 
-  unique(reg_data$subregion) %>%
-  map_df(function(x){
-    
-    data <- filter(reg_data, subregion != x)
-    
-    feols(pm2_5 ~ pm2.5_20km*fiw_pr |subregion + year, data) %>%
-      broom::tidy(conf.int = TRUE) %>%
-      filter(term == "pm2.5_20km:fiw_pr") %>%
-      mutate(Subregion := !!x)
-    }) %>%
-  arrange(estimate) %>%
-  mutate(Regression = row_number())
 
 coefs_exclude_subregion %>%
-  mutate(exclude = "Exclude China") %>%
-  bind_rows(coefs_subregion_include_china) %>%
-  mutate(exclude = replace_na(exclude, "Include China")) %>%
   ggplot(aes(x = Subregion, y = estimate)) +
   geom_point() + 
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high), color = "grey50",
@@ -232,8 +179,7 @@ coefs_exclude_subregion %>%
   theme(text = element_text(size = 20),
         axis.text.x = element_text(angle = 50, hjust = 1, size = 10),
         plot.margin = unit(c(0, 0, 0, 1), "inches")) + 
-  geom_hline(aes(yintercept = 0), linetype = "dashed", color = "black") + 
-  facet_wrap(~exclude)
+  geom_hline(aes(yintercept = 0), linetype = "dashed", color = "black") 
 ggsave(file.path(gdir, "outputs/robust_exclude_subregion.png"), width = 13, height = 7)
 
 
