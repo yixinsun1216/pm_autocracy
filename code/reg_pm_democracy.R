@@ -77,43 +77,18 @@ f_reg <-
   c(paste0("pm2_5 ~ ", satellite_measure, "*dem |subregion + year"), 
     paste0("pm2_5 ~ ", satellite_measure, "*fiw_pr |subregion + year")) 
 
-reg_all <- map(f_reg, ~feols(as.formula(.x), data = reg_data, cluster = ~countrycode)) 
 
 reg_nochina <- map(f_reg, ~feols(as.formula(.x), data = filter(reg_data, countrycode != "CHN"), cluster = ~countrycode)) 
 
-etable(reg_all, reg_nochina, dict = c(outdict, "chinaTRUE" = "China"), 
+etable(reg_nochina, dict = c(outdict, "chinaTRUE" = "China"), 
        tex = TRUE, replace = TRUE,
-       headers = list(":_:"= list("Full Sample" = 2, 
-                                  "No China" = 2)), 
        file = file.path(gdir, "outputs/reg_main.tex"))
 
-
-
-#==============================================================================
-# Graph of china's data by year
-#==============================================================================
-reg_data %>%
-  mutate(fiw_median = quantile(fiw_pr, .5, na.rm = TRUE), 
-         dem_median = case_when(fiw_median < 2 ~ "Free", 
-                                fiw_median >= 2 & fiw_median <= 4 ~ "Partially Free", 
-                                fiw_median > 4 ~ "Not Free"), 
-         dem_median = factor(dem_median, levels = c("Free", "Partially Free", "Not Free")))  %>%
-  filter(!is.na(dem_median), year >= 2010, year <= 2020) %>%
-  filter(country == "China") %>%
-  select(satellite = pm2.5_20km, reported = pm2_5, year, city, country, dem) %>%
-  ggplot(aes(x = satellite, y = reported)) + 
-  geom_point(size = .75, color = "grey30") + 
-  #stat_summary_bin(fun = "mean", bins = 100, size = .2) + 
-  theme_linedraw() + 
-  theme(legend.position = "bottom") + 
-  labs(color = "", y = "Reported PM2.5") + 
-  facet_wrap(~year) + 
-  xlim(0, 150) + 
-  ylim(0, 150) + 
-  stat_poly_line(se = FALSE) +
-  theme(text = element_text(size = 20)) +
-  geom_abline(intercept = 0, slope = 1, size = 0.5, linetype = "dashed")
-ggsave(file.path(gdir, "outputs/binned_pm_china_byyear.png"), width = 11, height = 6)  
+# with China
+reg_all <- map(f_reg, ~feols(as.formula(.x), data = reg_data, cluster = ~countrycode)) 
+etable(reg_all, dict = c(outdict, "chinaTRUE" = "China"), 
+       tex = TRUE, replace = TRUE,
+       file = file.path(gdir, "outputs/reg_main_withchina.tex"))
 
 
 #==============================================================================
@@ -171,6 +146,7 @@ etable(reg_fiw_dist_nochina, dict = outdict,
 #==============================================================================
 country_list <- unique(reg_data$countrycode)
 
+# run regression one at a time,where each regression excludes one country
 coefs_exclude_country <- 
   map_df(country_list[-which(country_list == "CHN")], function(x){
     data <- filter(reg_data, countrycode != x, !china)
@@ -182,16 +158,18 @@ coefs_exclude_country <-
   arrange(estimate) %>%
   mutate(Regression = row_number())
 
+# same as above, but this time we include china
 coefs_include_china <- map_df(unique(reg_data$countrycode), function(x){
   data <- filter(reg_data, countrycode != x)
   feols(pm2_5 ~ pm2.5_20km*fiw_pr |subregion + year, data) %>%
     broom::tidy(conf.int = TRUE) %>%
     filter(term == "pm2.5_20km:fiw_pr") %>%
     mutate(country := !!x)
-}) %>%
+  }) %>%
   arrange(estimate) %>%
   mutate(Regression = row_number())
 
+# combine the two types of robustness checks into one figure
 coefs_exclude_country %>%
   mutate(exclude = "Exclude China") %>%
   bind_rows(coefs_include_china) %>%
@@ -211,6 +189,8 @@ ggsave(file.path(gdir, "outputs/robust_exclude_country.png"), width = 13, height
 #==============================================================================
 # robustenss - exclude one subregion at a time
 #==============================================================================
+# same as above, but this time use subregions as defined by the UN. There are 22 
+# subregions in the world
 reg_data <- filter(reg_data, !is.na(subregion))
 
 coefs_exclude_subregion <- 
