@@ -22,10 +22,11 @@ source(file.path(working_dir, "filepaths.R"))
 theme_bias <- function(){
   theme(
     legend.position = "none",
+    axis.text = element_text(size = 18), 
+    title = element_text(size = 14),
     panel.background = element_rect(fill = "transparent", color = NA),  # Panel background
     plot.background = element_rect(fill = "transparent", color = NA),   # Plot background
     legend.background = element_rect(fill = "transparent", color = NA),  # Legend background,
-    text = element_text(size = 20),
     panel.border = element_blank(),       # Remove panel border
     panel.grid = element_blank(),         # Remove grid lines
     axis.line.x = element_blank(),        # Remove x-axis line
@@ -65,12 +66,12 @@ desc_data <-
 desc_data %>%
   filter(year >= 2010, year <= 2020) %>%
   filter(country == "China") %>%
-  select(satellite = pm2.5_20km, reported = pm2_5, year, city, country, dem) %>%
-  ggplot(aes(x = satellite, y = reported)) + 
+  select(Satellite = pm2.5_20km, reported = pm2_5, year, city, country, dem) %>%
+  ggplot(aes(x = Satellite, y = reported)) + 
   geom_point(size = .75, color = "grey30") + 
   theme_linedraw() + 
   theme(legend.position = c(.85, .2)) + 
-  labs(color = "", y = "Reported PM2.5") + 
+  labs(color = "", y = "Government Reported PM2.5") + 
   facet_wrap(~year) + 
   xlim(0, 150) + 
   ylim(0, 150) + 
@@ -87,7 +88,7 @@ desc_data %>%
   scale_color_manual(values = c("black", "blue"))
 ggsave(file.path(gdir, "outputs/china_byyear.png"), width = 11, height = 6)  
 
-
+stop()
 # run linear regression of pm2.5 vs satellite - take the coefficient
 # and subtract it from 1 to calculating a reporting bias
 reg_china <- 
@@ -100,7 +101,7 @@ reg_china <-
       mutate(year = as.numeric(x$model_info$sample$value), 
              n = x$nobs)
   }) %>%
-  mutate(bias = if_else(n > 10, -estimate, NA_real_), 
+  mutate(bias = if_else(n > 10, estimate, NA_real_), 
          prewar = year < 2013) 
 
 # plot the bias for each year
@@ -124,7 +125,8 @@ reg_china %>%
   annotate("rect", xmin = 2010.5, xmax = 2012.5, ymin = -Inf, # Cover the full range of y-axis
     ymax = Inf, fill = "gray70", alpha = 0.2) + 
   geom_text(aes(x = 2011.5, y = -.05, label = "No Data"), 
-            color = "gray50", size = 4) 
+            color = "gray50", size = 4) +
+  ggtitle("China's Underreporting Bias Over Time")
 ggsave(file.path(gdir, "outputs/china_reportingbias.png"), width = 11, height = 6)  
 
 
@@ -142,7 +144,7 @@ desc_data %>%
   theme_classic() + 
   scale_color_brewer(palette = "Dark2") +
   theme(legend.position = "bottom") + 
-  labs(color = "", y = "Reported PM2.5") + 
+  labs(color = "", y = "PM2.5 Reported to WHO") + 
   stat_poly_line(color = "black") +
   stat_poly_eq(use_label(c("eq", "R2")), size = 8, coef.digits = 2)  + 
   theme(text = element_text(size = 30)) + 
@@ -161,26 +163,29 @@ reg_bias_dem <-
       mutate(dem = x$model_info$sample$value, 
              n = x$nobs)
   }) %>%
-  mutate(bias = -estimate, 
+  mutate(bias = estimate, 
          dem = str_wrap(dem, width = 10),
          dem = factor(dem, levels = c("Free", "Partially\nFree", "Not Free")))
 
 # binned scatterplot - just free countries -------------------------------
 p_scatter_free <- desc_data %>%
   filter(!china, dem == "Free") %>% 
-  select(satellite = pm2.5_20km, reported = pm2_5, year, city, country, dem) %>%
-  ggplot(aes(x = satellite, y = reported, color = dem)) + 
+  select(Satellite = pm2.5_20km, reported = pm2_5, year, city, country, dem) %>%
+  ggplot(aes(x = Satellite, y = reported, color = dem)) + 
   stat_summary_bin(fun = "mean", bins = 100, size = .2) + 
   theme_classic() +
   scale_color_brewer(palette = "Dark2") +
-  labs(color = "", y = "Reported PM2.5") + 
+  labs(color = "", y = "Reportd to WHO") + 
   stat_poly_line(se = FALSE) +
-  theme(text = element_text(size = 20), legend.position = "bottom", 
+  theme(axis.text = element_text(size = 18), legend.position = "bottom", 
+        #axis.title.y = element_blank(),
+        title = element_text(size = 14),
         panel.background = element_rect(fill = "transparent", color = NA),  # Panel background
         plot.background = element_rect(fill = "transparent", color = NA),   # Plot background
         legend.background = element_rect(fill = "transparent", color = NA)) +   # Legend background 
   stat_poly_eq(use_label(c("eq", "R2")), size = 5, coef.digits = 2) +
-  xlim(0, 150) ; p_scatter_free
+  xlim(0, 150) +
+  ggtitle(expression("PM"[2.5]* " (measured in " ~ µg/m^3 ~ ")"))
 
 p_bias_free <- 
   reg_bias_dem%>%
@@ -188,12 +193,12 @@ p_bias_free <-
   ggplot(aes(x = dem, y = bias, color = dem)) + 
   geom_point(size = 3) +
   ylim(-.4, .4) + 
-  ylab("Reporting Bias")+ 
   geom_errorbar(aes(ymin = bias - 1.96*std.error, ymax = bias + 1.96*std.error), width = .2) +
   theme_minimal() + 
   theme_bias() +
   geom_hline(aes(yintercept = 0), color = "gray70") + 
-  scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) 
+  scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
+  ggtitle("Underreporting Bias")
 
 p_scatter_free + plot_spacer() + p_bias_free + plot_layout(widths = c(1.5, .1, 1)) &
   theme(plot.background = element_rect(fill='transparent'),
@@ -210,14 +215,17 @@ p_scatter_partial <-
   stat_summary_bin(fun = "mean", bins = 100, size = .2) + 
   theme_classic() + 
   scale_color_brewer(palette = "Dark2") +
-  labs(color = "", y = "Reported PM2.5") + 
+  labs(color = "", y = "Reportd to WHO") + 
   stat_poly_line(se = FALSE) +
-  theme(text = element_text(size = 20), legend.position = "bottom", 
+  theme(axis.text = element_text(size = 18), legend.position = "bottom", 
+        title = element_text(size = 14),
         panel.background = element_rect(fill = "transparent", color = NA),  # Panel background
         plot.background = element_rect(fill = "transparent", color = NA),   # Plot background
         legend.background = element_rect(fill = "transparent", color = NA)) +   # Legend background 
   stat_poly_eq(use_label(c("eq", "R2")), size = 5, coef.digits = 2) +
-  xlim(0, 150)
+  xlim(0, 150) +
+  ggtitle(expression("PM"[2.5]* " (measured in " ~ µg/m^3 ~ ")"))
+
 
 p_bias_partial <- 
   reg_bias_dem%>%
@@ -230,7 +238,8 @@ p_bias_partial <-
   theme_minimal() + 
   theme_bias() +
   geom_hline(aes(yintercept = 0), color = "gray70") + 
-  scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) 
+  scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
+  ggtitle("Underreporting Bias")
 
 (p_scatter_partial + plot_spacer() + p_bias_partial)  + 
   plot_layout(widths = c(1.5, .1, 1)) &
@@ -248,14 +257,18 @@ p_scatter_dem <-
   stat_summary_bin(fun = "mean", bins = 100, size = .2) + 
   theme_classic() + 
   scale_color_brewer(palette = "Dark2") +
-  labs(color = "", y = "Reported PM2.5") + 
+  labs(color = "", y = "Reportd to WHO") + 
   stat_poly_line(se = FALSE) +
-  theme(text = element_text(size = 20), legend.position = "bottom", 
+  theme(axis.text = element_text(size = 18), legend.position = "bottom", 
+        #axis.title.y = element_blank(),
+        title = element_text(size = 14),
         panel.background = element_rect(fill = "transparent", color = NA),  # Panel background
         plot.background = element_rect(fill = "transparent", color = NA),   # Plot background
         legend.background = element_rect(fill = "transparent", color = NA)) +   # Legend background 
   stat_poly_eq(use_label(c("eq", "R2")), size = 5, coef.digits = 2) +
-  xlim(0, 150)
+  xlim(0, 150) +
+  ggtitle(expression("PM"[2.5]* " (measured in " ~ µg/m^3 ~ ")"))
+
 
 
 p_bias_dem <- 
@@ -263,12 +276,12 @@ p_bias_dem <-
   ggplot(aes(x = dem, y = bias, color = dem)) + 
   geom_point(size = 3) +
   ylim(-.4, .4) + 
-  ylab("Reporting Bias")+ 
   geom_errorbar(aes(ymin = bias - 1.96*std.error, ymax = bias + 1.96*std.error), width = .2) +
   theme_minimal() + 
   theme_bias() +
   geom_hline(aes(yintercept = 0), color = "gray70") + 
-  scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) 
+  scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
+  ggtitle("Underreporting Bias")
 
 p_scatter_dem + plot_spacer() + p_bias_dem + plot_layout(widths = c(1.5, .1, 1))&
   theme(plot.background = element_rect(fill='transparent'),
@@ -314,7 +327,7 @@ p_everreport <- country_data %>%
   theme_classic() +
   theme(legend.position = "none", # Remove the legend since 'dem' already labels the x-axis
         axis.text = element_text(size = 18), 
-        title = element_text(size = 20), 
+        title = element_text(size = 14), 
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         panel.background = element_rect(fill = "transparent", color = NA),  # Panel background
@@ -328,7 +341,4 @@ p_bias_dem + plot_spacer() +  p_everreport + plot_layout(widths = c(1, .1, 1)) &
   theme(plot.background = element_rect(fill='transparent'),
         legend.background = element_rect(fill = 'transparent'))
 ggsave(file.path(gdir, "outputs/bias_report.png"), width = 12, height = 6)  
-
-
-ggsave(file.path(gdir, "outputs/reportingbias_dem.png"), plot = p_bias_dem, width = 6, height = 6)  
 

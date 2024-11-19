@@ -145,7 +145,8 @@ coefs_exclude_country %>%
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high), color = "grey50",
                 position = position_dodge2(width = 0.5, padding = 0.5)) + 
   theme_linedraw() +
-  theme(text = element_text(size = 20)) 
+  theme(text = element_text(size = 20))  + 
+  xlab("Excluded Country")
 ggsave(file.path(gdir, "outputs/robust_exclude_country.png"), width = 13, height = 8)
 
 
@@ -173,6 +174,7 @@ coefs_exclude_subregion <-
 coefs_exclude_subregion %>%
   ggplot(aes(x = Subregion, y = estimate)) +
   geom_point() + 
+  xlab("Excluded Subregion") + 
   geom_errorbar(aes(ymin = conf.low, ymax = conf.high), color = "grey50",
                 position = position_dodge2(width = 0.5, padding = 0.5), width = .3) + 
   theme_linedraw() +
